@@ -6,9 +6,9 @@ public class Procesador {
     private boolean encode = false;
 
     private boolean decode = false;
-    private boolean binarization = false;
-    private boolean averagin = false;
-    private boolean negative = false;
+    private String filter = "";
+
+    private int filterValue = 0;
     private int nTiles = 0;
     private int seekRange = 0;
     private int GOP = 10;
@@ -42,13 +42,24 @@ public class Procesador {
                 decode = true;
             }
             else if (args[i].equals("--binarization")) {
-                binarization = true;
+                if (args[i + 1].equals(null)) {
+                    System.out.println("Es necesario añadir un valor");
+                }else{
+                    filter = "binarization";
+                    filterValue = Integer.parseInt(args[i+1]);
+                }
             }
             else if (args[i].equals("--negative")) {
-                negative = true;
+                filter = "negative";
             }
             else if (args[i].equals("--averagin")) {
-                averagin = true;
+                if (args[i + 1].equals(null)) {
+                    System.out.println("Es necesario añadir un valor");
+                }else{
+                    filter = "averagin";
+                    filterValue = Integer.parseInt(args[i+1]);
+                }
+
             }
             else if (args[i].equals("--nTiles")) {
                 nTiles = Integer.parseInt(args[i+1]);
@@ -78,7 +89,7 @@ public class Procesador {
 
         if (encode) {
             CountDownLatch countDownLatch = new CountDownLatch(1);
-            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida, countDownLatch);
+            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida, countDownLatch, filter, filterValue);
             reproductor = new ReproductorImagenes(rutaArchivoSalida, fps, countDownLatch);
             codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP);
 
