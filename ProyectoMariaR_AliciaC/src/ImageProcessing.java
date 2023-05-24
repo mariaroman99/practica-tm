@@ -45,7 +45,7 @@ public class ImageProcessing {
         return allTiles;
     }
 
-    public void compareAndSaveTileCoordinates(ArrayList<Tiles> tiles, BufferedImage compareImage, BufferedImage originalImage, String outputFileName) {
+    public void compareAndSaveTileCoordinates(ArrayList<Tiles> tiles, BufferedImage compareImage, BufferedImage originalImage, String outputFileName, String outputImage) {
         int tileWidth = tiles.get(0).getImage().getWidth();
         int tileHeight = tiles.get(0).getImage().getHeight();
 
@@ -88,7 +88,7 @@ public class ImageProcessing {
                 }
             }
             // Save the modified original image
-            File outputImageFile = new File("modified_original_image.png");
+            File outputImageFile = new File(outputImage);
             ImageIO.write(originalImage, "png", outputImageFile);
         } catch (IOException e) {
             e.printStackTrace();

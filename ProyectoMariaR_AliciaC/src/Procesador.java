@@ -98,25 +98,18 @@ public class Procesador {
             CountDownLatch countDownLatch = new CountDownLatch(1);
             lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida, countDownLatch, filter, filterValue);
             reproductor = new ReproductorImagenes(rutaArchivoSalida, fps, countDownLatch);
-            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP);
+            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP, nTiles);
 
             lector.lectorImagenes();
             reproductor.reproducir();
             codificadorVideo.codificador();
 
-            ImageProcessing imageProcessing = new ImageProcessing();
-            File imageFile = new File("004.jpg");
-            BufferedImage image = ImageIO.read(imageFile);
-            File imageFile2 = new File("003.jpg");
-            BufferedImage image2 = ImageIO.read(imageFile2);
-            allTiles = imageProcessing.divideImageIntoTiles(image, 5);
-            System.out.println(allTiles.get(2).getId());
-            imageProcessing.compareAndSaveTileCoordinates(allTiles, image2, image, "documento.txt");
+
         }else{
             CountDownLatch countDownLatch = new CountDownLatch(0);
             reproductor = new ReproductorImagenes(rutaArchivoEntrada, fps, countDownLatch);
             reproductor.reproducir();
-            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP);
+            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP, nTiles);
             codificadorVideo.codificador();
         }
     }

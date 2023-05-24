@@ -4,21 +4,31 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+
 public class CodificadorVideo {
 
     private final String rutaArchivoEntrada;
     private final String rutaArchivoSalida;
     private final int GOP;
 
+    private final int nTiles;
 
-    public CodificadorVideo(String rutaArchivoEntrada, String rutaArchivoSalida, int GOP) {
+    private ImageProcessing imageProcessing;
+    public static ArrayList<Tiles> allTiles;
+
+    public BufferedImage  imageAnterior;
+
+
+    public CodificadorVideo(String rutaArchivoEntrada, String rutaArchivoSalida, int GOP, int nTiles) {
         this.rutaArchivoEntrada = rutaArchivoEntrada;
         this.rutaArchivoSalida = rutaArchivoSalida;
         this.GOP = GOP;
+        this.nTiles = nTiles;
 
     }
 
     public void codificador() throws IOException {
+        imageProcessing = new ImageProcessing();
 
         try (ZipFile zipFile = new ZipFile(rutaArchivoSalida)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -33,12 +43,14 @@ public class CodificadorVideo {
 
             if (!imageEntries.isEmpty()) {
                 Collections.sort(imageEntries, Comparator.comparing(ZipEntry::getName));
+                Collections.reverse(imageEntries);
 
                 int totalImages = imageEntries.size();
                 int zipFilesCount = (int) Math.ceil((double) totalImages / GOP);
 
                 int imageIndex = 0;
                 int zipIndex = 0;
+
 
                 while (imageIndex < totalImages) {
                     String zipFileName = zipIndex + "_" +  rutaArchivoSalida ;
@@ -57,10 +69,20 @@ public class CodificadorVideo {
                             inputStream.close();
                             zipOutputStream.closeEntry();
                             imageIndex++;
+                            String nameFile = "imagen" + Integer.toString(imageIndex) + "zip" + Integer.toString(zipIndex);
+
+
+                            if (i == 0){
+                                allTiles = imageProcessing.divideImageIntoTiles(image, 5);
+                                imageAnterior = image;
+                            }else{
+                                imageProcessing.compareAndSaveTileCoordinates(allTiles, image, imageAnterior,   nameFile + ".txt", nameFile + ".png" );
+                                allTiles = imageProcessing.divideImageIntoTiles(image, 5);
+                                imageAnterior = image;
+                            }
                         }
 
                     }
-
 
                     zipIndex++;
                 }
