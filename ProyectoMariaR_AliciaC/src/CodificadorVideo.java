@@ -58,7 +58,9 @@ public class CodificadorVideo {
                             zipOutputStream.closeEntry();
                             imageIndex++;
                         }
+
                     }
+
 
                     zipIndex++;
                 }

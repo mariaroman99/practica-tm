@@ -1,4 +1,9 @@
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
 public class Procesador {
@@ -22,6 +27,8 @@ public class Procesador {
     private ReproductorImagenes reproductor;
 
     private CodificadorVideo codificadorVideo;
+
+    public static ArrayList<Tiles> allTiles;
 
     public Procesador(String[] args) throws IOException, InterruptedException {
         procesarArgumentos(args);
@@ -96,6 +103,15 @@ public class Procesador {
             lector.lectorImagenes();
             reproductor.reproducir();
             codificadorVideo.codificador();
+
+            ImageProcessing imageProcessing = new ImageProcessing();
+            File imageFile = new File("004.jpg");
+            BufferedImage image = ImageIO.read(imageFile);
+            File imageFile2 = new File("003.jpg");
+            BufferedImage image2 = ImageIO.read(imageFile2);
+            allTiles = imageProcessing.divideImageIntoTiles(image, 5);
+            System.out.println(allTiles.get(2).getId());
+            imageProcessing.compareAndSaveTileCoordinates(allTiles, image2, image, "documento.txt");
         }else{
             CountDownLatch countDownLatch = new CountDownLatch(0);
             reproductor = new ReproductorImagenes(rutaArchivoEntrada, fps, countDownLatch);
