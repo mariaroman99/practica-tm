@@ -19,22 +19,20 @@ public class ReproductorImagenes {
 
     private final String archivoZip;
     private final int fps;
-    private CountDownLatch countDownLatch;
+ 
 
 
 
 
-    public ReproductorImagenes(String archivoZip, int fps, CountDownLatch countDownLatch) {
+    public ReproductorImagenes(String archivoZip, int fps) {
         this.archivoZip = archivoZip;
         this.fps = fps;
-        this.countDownLatch = countDownLatch;
-
+       
     }
 
     public void reproducir() throws IOException, InterruptedException {
-        countDownLatch.await();
         ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(archivoZip));
-        ZipEntry zipEntry;
+        ZipEntry zipEntry ;
 
         // Obtener la frecuencia de actualización de la imagen
         long tiempoPorFotograma = 1000 / fps;
@@ -50,8 +48,6 @@ public class ReproductorImagenes {
 
         // Recorrer las entradas del archivo ZIP
         while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-            String nombreArchivo = zipEntry.getName();
-
             BufferedImage imagen = ImageIO.read(zipInputStream);
 
 
@@ -64,12 +60,19 @@ public class ReproductorImagenes {
         }
 
         // Recorrer la lista de imágenes y mostrar cada una durante el tiempo de un fotograma
-        for (BufferedImage imagen : imagenes) {
+        for (int i = 0; i < imagenes.size(); i++) {
+            BufferedImage imagen = imagenes.get(i);
             JLabel etiqueta = new JLabel(new ImageIcon(imagen));
             ventana.getContentPane().removeAll();
             ventana.getContentPane().add(etiqueta);
             ventana.pack();
             Thread.sleep(tiempoPorFotograma);
+
+            // Si es la última imagen
+            if (i == imagenes.size() - 1) {
+                // Cierra la ventana
+                ventana.dispose();
+            }
         }
 
         // Cerrar los streams

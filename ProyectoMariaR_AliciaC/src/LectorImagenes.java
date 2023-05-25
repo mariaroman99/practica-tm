@@ -1,4 +1,5 @@
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.WritableRaster;
 import java.util.*;
 import java.util.zip.*;
@@ -11,17 +12,20 @@ public class LectorImagenes {
 
     private final String rutaArchivoEntrada;
     private final String rutaArchivoSalida;
-    private CountDownLatch countDownLatch;
+  
 
     private final String filter;
     private final int filterValue;
 
-    public LectorImagenes(String rutaArchivoEntrada, String rutaArchivoSalida, CountDownLatch countDownLatch, String filter, int filterValue) {
+    public HashMap<Integer, Image> imagnesFiltradas;
+
+    public LectorImagenes(String rutaArchivoEntrada, String rutaArchivoSalida,  String filter, int filterValue, HashMap<Integer, Image> imagnesFiltradas) {
         this.rutaArchivoEntrada = rutaArchivoEntrada;
         this.rutaArchivoSalida = rutaArchivoSalida;
-        this.countDownLatch = countDownLatch;
+       
         this.filter = filter;
         this.filterValue = filterValue;
+        this.imagnesFiltradas = imagnesFiltradas;
     }
 
     public  void lectorImagenes() {
@@ -30,6 +34,7 @@ public class LectorImagenes {
             ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(rutaArchivoSalida));
             int contador = 1;
             int numEntradas = 0;
+            int posicion = 0;
             // Abrir el archivo ZIP de entrada
             ZipFile inputZip = new ZipFile(rutaArchivoEntrada);
             Enumeration<? extends ZipEntry> entries_count = inputZip.entries();
@@ -45,7 +50,7 @@ public class LectorImagenes {
                 ZipEntry entry = entries.nextElement();
 
                 double progress = contador;
-                printProgressBar(progress);
+               
                 contador ++;
 
                 // Obtener el nombre del archivo y su extensión
@@ -69,6 +74,10 @@ public class LectorImagenes {
                         image = imageWithoutFilter;
                     }
 
+                    imagnesFiltradas.put(posicion, image);
+                    posicion ++;
+
+
 
                     // Crear una entrada ZIP para el archivo de imagen JPG de salida
                     ZipEntry jpgEntry = new ZipEntry(fileName.substring(0, fileName.lastIndexOf(".")) + ".jpg");
@@ -89,29 +98,15 @@ public class LectorImagenes {
 
             System.out.println("");
             System.out.println("Archivos de imagen convertidos y comprimidos en el archivo ZIP de salida.");
-            countDownLatch.countDown();
+           
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void printProgressBar(double progress) {
-        StringBuilder progressBar = new StringBuilder();
-        progressBar.append("[");
-        int filledLength = (int) progress * 100;
-        System.out.print(filledLength);
-        for (int i = 0; i < 100; i++) {
-            if (i < filledLength) {
-                progressBar.append("=");
-            } else {
-                progressBar.append(" ");
-            }
-        }
-        progressBar.append("] " + (int) progress + "%");
-        System.out.print("\r" + progressBar.toString());
-    }
+    
 
-    public static BufferedImage binarization(BufferedImage image, int threshold) {
+    public  BufferedImage binarization(BufferedImage image, int threshold) {
         // Array de 3 posiciones donde se almacenan los valores R, G, B de cada píxel
         int[] pixelColors;
         int[] black = new int[3];
@@ -152,7 +147,7 @@ public class LectorImagenes {
     }
 
     // Aplica el filtro de negativo a una BufferedImage
-    public static BufferedImage negative(BufferedImage image) {
+    public  BufferedImage negative(BufferedImage image) {
         // Array de 3 posiciones donde se almacenan los valores R, G, B de cada píxel
         int[] pixelColors;
         // Array de 3 posiciones donde se almacenarán los nuevos valores R, G, B negativos
@@ -185,7 +180,7 @@ public class LectorImagenes {
     }
 
     // Aplica un filtro de promediado (averaging) a una BufferedImage, utilizando una ventana de tamaño 'value'
-    public static BufferedImage average(BufferedImage image, int value) {
+    public BufferedImage average(BufferedImage image, int value) {
         // Array de 3 posiciones donde se almacenan los valores R, G, B de cada píxel
         int[] pixelColors;
         // Array de 3 posiciones donde se almacenarán los valores promedio de cada canal de color
@@ -245,15 +240,6 @@ public class LectorImagenes {
         int blue = color & 0xFF;
         return new int[]{red, green, blue};
     }
-
-
-
-
-
-
-
-
-
 
 
 

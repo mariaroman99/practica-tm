@@ -1,9 +1,11 @@
 import javax.imageio.ImageIO;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class Procesador {
@@ -28,7 +30,10 @@ public class Procesador {
 
     private CodificadorVideo codificadorVideo;
 
-    public static ArrayList<Tiles> allTiles;
+    private DecodificadorVideo decodificadorVideo;
+
+    public HashMap<Integer, Image> imagenesFiltradas = new HashMap<Integer, Image>();
+
 
     public Procesador(String[] args) throws IOException, InterruptedException {
         procesarArgumentos(args);
@@ -47,6 +52,7 @@ public class Procesador {
             }
             else if (args[i].equals("-d") || args[i].equals("--decode")) {
                 decode = true;
+                System.out.println("Entra en decode");
             }
             else if (args[i].equals("--binarization")) {
                 if (args[i + 1].equals(null)) {
@@ -95,22 +101,36 @@ public class Procesador {
         }
 
         if (encode) {
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida, countDownLatch, filter, filterValue);
-            reproductor = new ReproductorImagenes(rutaArchivoSalida, fps, countDownLatch);
-            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP, nTiles);
+            // Código para la codificación
+            System.out.println("Empieza la codificación");
+           
+            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida,  filter, filterValue, imagenesFiltradas);
+            reproductor = new ReproductorImagenes(rutaArchivoSalida, fps);
+            codificadorVideo = new CodificadorVideo(imagenesFiltradas, GOP, nTiles, seekRange, quality, rutaArchivoSalida);
 
             lector.lectorImagenes();
             reproductor.reproducir();
-            codificadorVideo.codificador();
+            codificadorVideo.GOPSeparation();
+            codificadorVideo.recorrerGOP();
 
+            System.out.println("Ha finalizado la compresión");
+        } else if (decode) {
+            // Código para la decodificación
+            System.out.println("Empieza la decodificación");
+            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida, filter, filterValue, imagenesFiltradas);
+            decodificadorVideo = new DecodificadorVideo(fps, GOP, nTiles, rutaArchivoSalida, lector);
+            decodificadorVideo.decode();
 
-        }else{
-            CountDownLatch countDownLatch = new CountDownLatch(0);
-            reproductor = new ReproductorImagenes(rutaArchivoEntrada, fps, countDownLatch);
+            System.out.println("Ha finalizado la descompresión");
+            reproductor = new ReproductorImagenes("output/decompressed.zip", fps);
             reproductor.reproducir();
-            codificadorVideo = new CodificadorVideo(rutaArchivoEntrada, rutaArchivoSalida, GOP, nTiles);
-            codificadorVideo.codificador();
+        }
+
+        else{
+           
+            reproductor = new ReproductorImagenes(rutaArchivoEntrada, fps);
+            reproductor.reproducir();
+
         }
     }
 
