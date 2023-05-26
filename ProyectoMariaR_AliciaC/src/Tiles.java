@@ -1,11 +1,6 @@
 import java.awt.image.BufferedImage;
 
-import java.awt.image.BufferedImage;
 
-/**
- *
- * @author BlaiSB
- */
 public class Tiles {
 
     private int x,y, id, xDest, yDest;

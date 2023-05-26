@@ -55,23 +55,15 @@ public class Procesador {
                 System.out.println("Entra en decode");
             }
             else if (args[i].equals("--binarization")) {
-                if (args[i + 1].equals(null)) {
-                    System.out.println("Es necesario añadir un valor");
-                }else{
-                    filter = "binarization";
-                    filterValue = Integer.parseInt(args[i+1]);
-                }
+                filter = "binarization";
+                filterValue = Integer.parseInt(args[i+1]);
             }
             else if (args[i].equals("--negative")) {
                 filter = "negative";
             }
             else if (args[i].equals("--averagin")) {
-                if (args[i + 1].equals(null)) {
-                    System.out.println("Es necesario añadir un valor");
-                }else{
-                    filter = "averagin";
-                    filterValue = Integer.parseInt(args[i+1]);
-                }
+                filter = "averagin";
+                filterValue = Integer.parseInt(args[i+1]);
 
             }
             else if (args[i].equals("--nTiles")) {
@@ -103,7 +95,7 @@ public class Procesador {
         if (encode) {
             // Código para la codificación
             System.out.println("Empieza la codificación");
-           
+            System.out.println(filter);
             lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida,  filter, filterValue, imagenesFiltradas);
             reproductor = new ReproductorImagenes(rutaArchivoSalida, fps);
             codificadorVideo = new CodificadorVideo(imagenesFiltradas, GOP, nTiles, seekRange, quality, rutaArchivoSalida);
@@ -112,6 +104,7 @@ public class Procesador {
             reproductor.reproducir();
             codificadorVideo.GOPSeparation();
             codificadorVideo.recorrerGOP();
+
 
             System.out.println("Ha finalizado la compresión");
         } else if (decode) {
@@ -127,8 +120,14 @@ public class Procesador {
         }
 
         else{
-           
-            reproductor = new ReproductorImagenes(rutaArchivoEntrada, fps);
+            // Código para la codificación
+            System.out.println("Sin decodificación");
+            lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida,  filter, filterValue, imagenesFiltradas);
+            reproductor = new ReproductorImagenes(rutaArchivoSalida, fps);
+
+
+            lector.lectorImagenes();
+
             reproductor.reproducir();
 
         }

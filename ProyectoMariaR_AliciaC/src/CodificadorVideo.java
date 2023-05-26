@@ -110,6 +110,7 @@ public class CodificadorVideo {
                 }
 
                 n_1 = (Marco) listaListasGOP.get(p).get(z + 1);
+                // Calculamos el tamaño de las teselas
                 this.width = n_1.getImage().getWidth() / this.ntiles;
                 this.height = n_1.getImage().getHeight() / this.ntiles;
 
@@ -154,7 +155,8 @@ public class CodificadorVideo {
                 x = Math.round(x); // Asegura que x sea un número entero
                 y = Math.round(y); // Asegura que y sea un número entero
 
-                // Crea una nueva tesela a partir de la subimagen correspondiente
+                // Crea una nueva tesela a partir de la subimagen correspondiente  con las coordenadas y la altura y ancho
+                // el contador será nuestro id
                 tile = new Tiles(image.getSubimage((int) x, (int) y, (int) this.width, (int) this.height), contador);
 
                 // Agrega la tesela a la lista de teselas
@@ -226,7 +228,7 @@ public class CodificadorVideo {
      * Peak signal-to-noise ratio entre el Marco I i les Tiles de la imatge J.
      */
     private float calcularRatioPSNR(Tiles tile, BufferedImage pframe) {
-        float soroll = 0, mse = 0, psnr = 0;
+        float dif = 0, mse = 0, psnr = 0;
         BufferedImage iFrame = tile.getTiles();
 
         // Calcula la diferencia al cuadrado entre los componentes RGB de cada píxel
@@ -235,14 +237,16 @@ public class CodificadorVideo {
                 Color iframe_rgb = new Color(iFrame.getRGB(j, i));
                 Color pframe_rgb = new Color(pframe.getRGB(j, i));
 
-                soroll = (float) (soroll + Math.pow(pframe_rgb.getRed() - iframe_rgb.getRed(), 2));
-                soroll = (float) (soroll + Math.pow(pframe_rgb.getGreen() - iframe_rgb.getGreen(), 2));
-                soroll = (float) (soroll + Math.pow(pframe_rgb.getBlue() - iframe_rgb.getBlue(), 2));
+
+                // Extraer los componentes RGB de los píxeles y calculamos la la diferencia al cuadrado para cada componente RGB
+                dif = (float) (dif + Math.pow(pframe_rgb.getRed() - iframe_rgb.getRed(), 2));
+                dif = (float) (dif + Math.pow(pframe_rgb.getGreen() - iframe_rgb.getGreen(), 2));
+                dif = (float) (dif + Math.pow(pframe_rgb.getBlue() - iframe_rgb.getBlue(), 2));
             }
         }
 
         // Calcula el error cuadrático medio (MSE) y el ratio PSNR
-        mse = soroll / (iFrame.getHeight() * iFrame.getWidth() * 3);
+        mse = dif/ (iFrame.getHeight() * iFrame.getWidth() * 3);
         psnr = (float) (10 * Math.log10((255 * 255) / mse));
 
         return psnr; // Devuelve el ratio PSNR calculado

@@ -7,8 +7,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -20,11 +18,6 @@ import javax.imageio.stream.ImageOutputStream;
 
 
 
-
-/**
- *
- * @author Victor Fernandez - Alvaro Ortega
- */
 public class DecodificadorVideo {
     public ArrayList<Integer> ids;
     public ArrayList<Integer> xCoords;

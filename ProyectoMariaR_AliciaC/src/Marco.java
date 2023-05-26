@@ -2,10 +2,7 @@
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-/**
- *  Classe Marc que implementara certs atributs per a la gestió de frames.
- *  @Author Victor i Alvaro
- */
+
 public class Marco{
     private BufferedImage image;
     private int id;
