@@ -32,6 +32,8 @@ public class DecodificadorVideo {
     String output;
     public boolean batch = false;
 
+    ArrayList<Tiles> lista_tiles = new ArrayList<>();
+
     public LectorImagenes lectorImagenes;
     /**
      * Clase decodificador, que a partir de una archivo comprimido codificado y
@@ -216,16 +218,16 @@ public class DecodificadorVideo {
                 count++;
             }
         }
-        for (int k = _final; k >= _inicio; --k) {
-            Tiles t = tiles.get(ids.get(k));
+        for (int k = _final - nTiles; k >= _inicio; --k) {
+            Tiles t = tiles.get(ids.get(k + nTiles));
             Integer x = xCoords.get(k);
             Integer y = yCoords.get(k);
-            System.out.println(ids.get(k) + "," + x + "," + y);
+            //System.out.println(ids.get(k) + "," + x + "," + y);
             BufferedImage tes = t.getTiles();
             if (x != -1 && y != -1) {
                 for (int i = 0; i < this.tileHeight; i++) {
                     for (int j = 0; j < this.tileWidth; j++) {
-                        int RGB = tes.getRGB(j , i );
+                        int RGB = tes.getRGB(j , i);
                         destino.setRGB(j + y  , i + x, RGB);
                     }
                 }
