@@ -159,7 +159,6 @@ public class CodificadorVideo {
                 id++;
             }
         }
-
         return tilesList; // Devuelve la lista de teselas generada
     }
 
@@ -179,43 +178,78 @@ public class CodificadorVideo {
         int id;
 
         ArrayList<Tiles> resultTiles = new ArrayList<>();
+        boolean[][] matchedRegions = new boolean[frames.getWidth()][frames.getHeight()]; // Matriz para marcar las regiones ya emparejadas
 
-        int tileWidth = frames.getWidth()/ ntiles;
-        int tileHeight = frames.getHeight()/ ntiles;
+        int tileWidth = frames.getWidth() / ntiles;
+        int tileHeight = frames.getHeight() / ntiles;
 
         for (Tiles t : destino.getTiles()) {
             valorFinal = 0;
             id = t.getId();
+
             // Coordenadas de la tesela
             x = ((int) Math.ceil((double) id / ntiles)) * tileHeight;
             y = (id % ntiles) * tileWidth;
 
-            // Iteramos sobre las teselas y buscamos coincidencias mediante PSNR
-            for (int i = Math.max((x - seekRange), 0); i <= Math.min((x + tileHeight + seekRange), frames.getHeight()) - tileHeight; i++) {
-                for (int j = Math.max((y - seekRange), 0); j <= Math.min((y + tileWidth + seekRange), frames.getWidth()) - tileWidth; j++) {
-                    double valor = funcioComparadora(t, frames.getSubimage(j, i, tileWidth, tileHeight));
-                    if (valor >= quality) {
-                        valorFinal = valor;
-                        coordX = i;
-                        coordY = j;
+            boolean foundMatch = false; // Bandera para indicar si se encontró una coincidencia
+
+            // Iteramos sobre las teselas y buscamos coincidencias
+            for (int i = x - seekRange; i <= x + seekRange; i++) {
+                for (int j = y - seekRange; j <= y + seekRange; j++) {
+                    if (j >= 0 && j <= frames.getWidth() - this.width && i >= 0 && i <= frames.getHeight() - this.height) {
+                        // Comprobamos si la región ya está emparejada
+                        boolean alreadyMatched = false;
+                        for (int a = i; a < i + this.height; a++) {
+                            for (int b = j; b < j + this.width; b++) {
+                                if (matchedRegions[b][a]) {
+                                    alreadyMatched = true;
+                                    break;
+                                }
+                            }
+                            if (alreadyMatched) {
+                                break;
+                            }
+                        }
+                        if (alreadyMatched) {
+                            continue; // Saltamos esta iteración si la región ya está emparejada
+                        }
+
+                        double valor = funcioComparadora(t, frames.getSubimage(j, i, this.width, this.height));
+                        if (valor >= quality) {
+                            valorFinal = valor;
+                            coordX = i;
+                            coordY = j;
+                            foundMatch = true;
+                            break; // Salimos del bucle interno si se encuentra una coincidencia
+                        }
                     }
                 }
+                if (foundMatch) {
+                    break; // Salimos del bucle externo si se encuentra una coincidencia
+                }
             }
-            // Si encontramos una coincidencia, establecemos las coordenadas de destino de la tesela
-            if (valorFinal !=  0) {
+
+            // Si encontramos una coincidencia, establecemos las coordenadas de destino de la tesela y marcamos la región como ya emparejada
+            if (valorFinal != 0) {
                 t.setXDest(coordX);
                 t.setYDest(coordY);
-
-            }
-            else {
+                for (int i = coordX; i < coordX + this.height; i++) {
+                    for (int j = coordY; j < coordY + this.width; j++) {
+                        matchedRegions[j][i] = true;
+                    }
+                }
+            } else {
                 t.setXDest(-1);
                 t.setYDest(-1);
-            } resultTiles.add(t);
-
+            }
+            resultTiles.add(t);
         }
 
         return resultTiles;
     }
+
+
+
 
 
     /**

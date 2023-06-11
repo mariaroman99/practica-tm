@@ -156,6 +156,8 @@ public class DecodificadorVideo {
                         ids.add(Integer.parseInt(parts[0]));
                         xCoords.add(Integer.parseInt(parts[1]));
                         yCoords.add(Integer.parseInt(parts[2]));
+
+
                     }
                     reader.close();
                 } else {
@@ -183,16 +185,15 @@ public class DecodificadorVideo {
             // Para no recorrer toda la lista de ids para cada imagen, miramos las posiciones donde se
             // encuetran las coordenadas en el fichero texto
             if (x != 0 && x!=1 && x % 10 != 0){
-                posInicio = posInicio + (nTiles*nTiles);
-                posFinal = posFinal + (nTiles*nTiles);
+                posInicio = posInicio + (nTiles * nTiles);
+                posFinal = posFinal + (nTiles * nTiles);
             }
             if (x % this.GOP == 0) {
                 iframe = frame;
             } else if (x == this.imagenes.size() - 2) {
-                this.buildPFrames(iframe, frame, posInicio, posFinal);
-                this.buildPFrames(frame, this.imagenes.get(x + 1), posInicio, posFinal);
+                this.reconstruirImagen(frame, this.imagenes.get(x + 1), posInicio, posFinal);
             } else {
-                this.buildPFrames(iframe, frame, posInicio, posFinal);
+                this.reconstruirImagen(iframe, frame, posInicio, posFinal);
             }
 
         }
@@ -204,7 +205,7 @@ public class DecodificadorVideo {
      * a partir del frame I, aplica la media de color al frame P.
    
      */
-    private void buildPFrames(BufferedImage base, BufferedImage destino, int _inicio, int _final) {
+    private void reconstruirImagen(BufferedImage base, BufferedImage destino, int _inicio, int _final) {
         ArrayList<Tiles> tiles = new ArrayList<>();
         Tiles tile;
         int count = 0;
@@ -215,15 +216,17 @@ public class DecodificadorVideo {
                 count++;
             }
         }
-        for (int i = _inicio; i < _final; i++) {
-            Tiles t = tiles.get(ids.get(i));
-            Integer x = xCoords.get(i);
-            Integer y = yCoords.get(i);
+        for (int k = _final; k >= _inicio; --k) {
+            Tiles t = tiles.get(ids.get(k));
+            Integer x = xCoords.get(k);
+            Integer y = yCoords.get(k);
+            System.out.println(ids.get(k) + "," + x + "," + y);
+            BufferedImage tes = t.getTiles();
             if (x != -1 && y != -1) {
-                for (int xCoord = 0; xCoord < (this.tileHeight); xCoord++) {
-                    for (int yCoord = 0; yCoord < (this.tileWidth); yCoord++) {
-                        int rgb = t.getTiles().getRGB(yCoord, xCoord);
-                        destino.setRGB(yCoord + y, xCoord + x, rgb);
+                for (int i = 0; i < this.tileHeight; i++) {
+                    for (int j = 0; j < this.tileWidth; j++) {
+                        int RGB = tes.getRGB(j , i );
+                        destino.setRGB(j + y  , i + x, RGB);
                     }
                 }
             }
@@ -231,7 +234,7 @@ public class DecodificadorVideo {
     }
 
     /**
-     * Metodo auxiliar del metodo buildPFrames, que a partir de una imagen pasada por parametro
+     * Metodo auxiliar del metodo reconstruirImagen, que a partir de una imagen pasada por parametro
      * permite subdividir dicha imagen en una array de teselas, que devuelve como retorno.
 
      */
