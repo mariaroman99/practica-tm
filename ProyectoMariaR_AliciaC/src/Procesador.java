@@ -16,16 +16,19 @@ public class Procesador {
     private String filter = "";
 
     private int filterValue = 0;
-    private int nTiles = 0;
-    private int seekRange = 0;
+    private int nTiles = 5;
+    private int seekRange = 5;
     private int GOP = 10;
-    private int quality = 0;
+    private int quality = 10;
     private boolean batch = false;
     private String rutaArchivoEntrada = null;
     private String rutaArchivoSalida = null;
     //Velocidad estandar
     private int fps = 24;
     private LectorImagenes lector;
+
+    private boolean help = false;
+
     private ReproductorImagenes reproductor;
 
     private CodificadorVideo codificadorVideo;
@@ -84,7 +87,19 @@ public class Procesador {
             else if (args[i].equals("-fps")) {
                 fps = Integer.parseInt(args[i+1]);
             }
+            else if (args[i].equals("-help") || args[i].equals("--help") ) {
+                help = true;
+            }
 
+        }
+        if (help){
+            System.out.println("Aquí estan les possibles comandes:");
+            System.out.println("-i, --input  <path to file.zip>");
+            System.out.println("-o, --output <path to file>");
+            System.out.println("-e, --encode, -d, --decode");
+            System.out.println("--fps <value> , --binarization <value>, --negative, --averaging <value>");
+            System.out.println("--nTiles <value,...> ,--seekRange <value>, --GOP <value>");
+            System.out.println("--quality <value>, -b, --batch");
         }
 
         if (rutaArchivoEntrada == null || rutaArchivoSalida == null) {
@@ -94,6 +109,7 @@ public class Procesador {
 
         if (encode) {
             // Código para la codificación
+
             System.out.println("Empieza la codificación");
             System.out.println(filter);
             lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida,  filter, filterValue, imagenesFiltradas);
@@ -102,11 +118,10 @@ public class Procesador {
 
             lector.lectorImagenes();
             reproductor.reproducir();
-            codificadorVideo.GOPSeparation();
-            codificadorVideo.recorrerGOP();
+            codificadorVideo.code();
 
 
-            System.out.println("Ha finalizado la compresión");
+            System.out.println("\nHa finalizado la compresión");
         } else if (decode) {
             // Código para la decodificación
             System.out.println("Empieza la decodificación");
@@ -114,8 +129,8 @@ public class Procesador {
             decodificadorVideo = new DecodificadorVideo(fps, GOP, nTiles, rutaArchivoSalida, lector);
             decodificadorVideo.decode();
 
-            System.out.println("Ha finalizado la descompresión");
-            reproductor = new ReproductorImagenes("output/decompressed.zip", fps);
+            System.out.println("\nHa finalizado la descompresión");
+            reproductor = new ReproductorImagenes("output/ImagenesDescomprimidas.zip", fps);
             reproductor.reproducir();
         }
 

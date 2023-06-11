@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -22,8 +23,8 @@ public class DecodificadorVideo {
     public ArrayList<Integer> ids;
     public ArrayList<Integer> xCoords;
     public ArrayList<Integer> yCoords;
-    public ArrayList<BufferedImage> imatges;
-    public int gop;
+    public ArrayList<BufferedImage> imagenes;
+    public int GOP;
     public int tileWidth;
     public int tileHeight;
     public int nTiles;
@@ -36,20 +37,17 @@ public class DecodificadorVideo {
      * Clase decodificador, que a partir de una archivo comprimido codificado y
      * un documento con los parametros de codificacion, descomprime el archivo y
      * recompone (decodifica) las imagenes.
-     *
-     * @param gop
-     * @param nTiles
+    
      */
-    public DecodificadorVideo(int fps ,int gop, int nTiles, String output, LectorImagenes lectorImagenes) {
-        this.batch = batch;
+    public DecodificadorVideo(int fps ,int GOP, int nTiles, String output, LectorImagenes lectorImagenes) {
         this.output = output;
         this.fps = fps;
-        this.gop = gop;
+        this.GOP = GOP;
         this.nTiles = nTiles;
         this.ids = new ArrayList<>();
         this.xCoords = new ArrayList<>();
         this.yCoords = new ArrayList<>();
-        this.imatges = new ArrayList<>();
+        this.imagenes = new ArrayList<>();
         this.lectorImagenes = lectorImagenes;
 
     }
@@ -61,25 +59,29 @@ public class DecodificadorVideo {
     public ArrayList<BufferedImage> decode() throws IOException {
         this.readZip();
         this.iterateImages();
-        new File("output/decompressed/").mkdirs();
+        new File("output/ImagenesDescomprimidas/").mkdirs();
+        int totalImages = this.imagenes.size();
+        int completedImages = 0;
         int comptador = 0;
-        for (BufferedImage i : this.imatges) {
-            try {
-                compressInJPEG(lectorImagenes.average(i, 3), "output/decompressed/", String.valueOf(comptador) + ".jpeg");
-            } catch (IOException ex) {
-              
-            }
+        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream("output/ImagenesDescomprimidass/"));
+        for (BufferedImage i : this.imagenes) {
+            comprimirJPEG(i, "output/ImagenesDescomprimidas/", String.valueOf(comptador) + ".jpeg");
             comptador++;
+            completedImages++;
+            double progressPercentage = (double) completedImages / totalImages;
+            ProgressDemo.updateProgress(progressPercentage);
+
         }
-        convertToZip("output/decompressed");
-        return this.imatges;
+        convertToZip("output/ImagenesDescomprimidas");
+        zipOut.close();
+        return this.imagenes;
     }
 
     public static void convertToZip(String path) throws IOException {
         Path sourcePath = Paths.get(path);
 
         // Create a ZIP file
-        ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream("output/decompressed.zip"));
+        ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream("output/ImagenesDescomprimidas.zip"));
 
         Files.walk(sourcePath)
                 .filter(filePath -> !Files.isDirectory(filePath))
@@ -87,11 +89,13 @@ public class DecodificadorVideo {
                     try {
                         // Create a new ZIP entry
                         String relativePath = sourcePath.relativize(filePath).toString();
-                        zipOutputStream.putNextEntry(new ZipEntry(relativePath));
+                        ZipEntry zipEntry = new ZipEntry(relativePath);
+                        zipOutputStream.putNextEntry(zipEntry);
 
                         // Read the file and write its contents to the ZIP output stream
                         byte[] fileBytes = Files.readAllBytes(filePath);
-                        zipOutputStream.write(fileBytes, 0, fileBytes.length);
+                        zipOutputStream.write(fileBytes);
+
                         zipOutputStream.closeEntry();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -101,14 +105,13 @@ public class DecodificadorVideo {
         zipOutputStream.close();
     }
 
-    public static void compressInJPEG(BufferedImage image, String name, String outputIName) throws FileNotFoundException, IOException {
 
-        //File imageFile = new File("Desert.jpg");
+
+    public static void comprimirJPEG(BufferedImage image, String name, String outputIName) throws FileNotFoundException, IOException {
+         //File imageFile = new File("Desert.jpg");
         File compressedImageFile = new File(name + "/" + outputIName);
-        //InputStream inputStream = new FileInputStream(imageFile);
         OutputStream outputStream = new FileOutputStream(compressedImageFile);
         float imageQuality = 1.0f;
-        BufferedImage bufferedImage = image;
         //Get image writers
         Iterator<ImageWriter> imageWriters = ImageIO.getImageWritersByFormatName("jpg");
         if (!imageWriters.hasNext()) {
@@ -122,7 +125,7 @@ public class DecodificadorVideo {
         imageWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         imageWriteParam.setCompressionQuality(imageQuality);
 
-        imageWriter.write(null, new IIOImage(bufferedImage, null, null), imageWriteParam);
+        imageWriter.write(null, new IIOImage(image, null, null), imageWriteParam);
         //inputStream.close();
         outputStream.close();
         imageOutputStream.close();
@@ -137,16 +140,17 @@ public class DecodificadorVideo {
      */
     public void readZip() {
         try {
-            File f = new File("output/"+ output);
-            ZipFile z = new ZipFile(f);
-            Enumeration<? extends ZipEntry> entries = z.entries();
+            File zipFile = new File("output/" + output);
+            ZipFile zip = new ZipFile(zipFile);
+            Enumeration<? extends ZipEntry> entries = zip.entries();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 String name = entry.getName();
-                if (name.equalsIgnoreCase("Compressed/coords.txt")) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(z.getInputStream(entry)));
+                if (name.equalsIgnoreCase("ImagenesComprimidas/coords.txt")) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
                     String line;
+
                     while ((line = reader.readLine()) != null) {
                         String[] parts = line.split(" ");
                         ids.add(Integer.parseInt(parts[0]));
@@ -155,31 +159,40 @@ public class DecodificadorVideo {
                     }
                     reader.close();
                 } else {
-                    BufferedImage im = ImageIO.read(z.getInputStream(entry));
-                    this.imatges.add(im);
+                    BufferedImage image = ImageIO.read(zip.getInputStream(entry));
+                    imagenes.add(image);
                 }
             }
         } catch (IOException ex) {
-            
+            ex.printStackTrace();
         }
     }
+
 
     /**
      * Metodo que reconstruye las imagenes.
      */
     private void iterateImages() {
-        this.tileWidth = this.imatges.get(0).getWidth() / nTiles;
-        this.tileHeight = this.imatges.get(0).getHeight() / nTiles;
+        this.tileWidth = this.imagenes.get(0).getWidth() / nTiles;
+        this.tileHeight = this.imagenes.get(0).getHeight() / nTiles;
         BufferedImage iframe = null;
-        for (int x = 0; x < this.imatges.size() - 1; x++) {
-            BufferedImage frame = this.imatges.get(x);
-            if (x % this.gop == 0) {
+        int posInicio = 0;
+        int posFinal = (nTiles * nTiles) -1;
+        for (int x = 0; x < this.imagenes.size() - 1; x++) {
+            BufferedImage frame = this.imagenes.get(x);
+            // Para no recorrer toda la lista de ids para cada imagen, miramos las posiciones donde se
+            // encuetran las coordenadas en el fichero texto
+            if (x != 0 && x!=1 && x % 10 != 0){
+                posInicio = posInicio + (nTiles*nTiles);
+                posFinal = posFinal + (nTiles*nTiles);
+            }
+            if (x % this.GOP == 0) {
                 iframe = frame;
-            } else if (x == this.imatges.size() - 2) {
-                this.buildPFrames(iframe, frame);
-                this.buildPFrames(frame, this.imatges.get(x + 1));
+            } else if (x == this.imagenes.size() - 2) {
+                this.buildPFrames(iframe, frame, posInicio, posFinal);
+                this.buildPFrames(frame, this.imagenes.get(x + 1), posInicio, posFinal);
             } else {
-                this.buildPFrames(iframe, frame);
+                this.buildPFrames(iframe, frame, posInicio, posFinal);
             }
 
         }
@@ -187,14 +200,22 @@ public class DecodificadorVideo {
 
     /**
      * Metodo auxiliar del metodo iterateImages, que a partir de un frame I y un 
-     * frame P utilizando las teselas generadas por el metodo generateMacroblocks
+     * frame P utilizando las teselas generadas
      * a partir del frame I, aplica la media de color al frame P.
-     * @param iframe
-     * @param pframe
+   
      */
-    private void buildPFrames(BufferedImage iframe, BufferedImage pframe) {
-        ArrayList<Tiles> tiles = generateMacroblocks(iframe);
-        for (int i = 0; i < ids.size(); i++) {
+    private void buildPFrames(BufferedImage base, BufferedImage destino, int _inicio, int _final) {
+        ArrayList<Tiles> tiles = new ArrayList<>();
+        Tiles tile;
+        int count = 0;
+        for (int y = 0; y < base.getHeight(); y += this.tileHeight) {
+            for (int x = 0; x < base.getWidth(); x += this.tileWidth) {
+                tile = new Tiles(base.getSubimage(x, y, this.tileWidth, this.tileHeight), count);
+                tiles.add(tile);
+                count++;
+            }
+        }
+        for (int i = _inicio; i < _final; i++) {
             Tiles t = tiles.get(ids.get(i));
             Integer x = xCoords.get(i);
             Integer y = yCoords.get(i);
@@ -202,7 +223,7 @@ public class DecodificadorVideo {
                 for (int xCoord = 0; xCoord < (this.tileHeight); xCoord++) {
                     for (int yCoord = 0; yCoord < (this.tileWidth); yCoord++) {
                         int rgb = t.getTiles().getRGB(yCoord, xCoord);
-                        pframe.setRGB(yCoord + y, xCoord + x, rgb);
+                        destino.setRGB(yCoord + y, xCoord + x, rgb);
                     }
                 }
             }
@@ -212,22 +233,9 @@ public class DecodificadorVideo {
     /**
      * Metodo auxiliar del metodo buildPFrames, que a partir de una imagen pasada por parametro
      * permite subdividir dicha imagen en una array de teselas, que devuelve como retorno.
-     * @param image
-     * @return array de teselas de la imagen.
+
      */
-    public ArrayList<Tiles> generateMacroblocks(BufferedImage image) {
-        ArrayList<Tiles> tiles = new ArrayList<>();
-        Tiles t;
-        int count = 0;
-        for (int y = 0; y < image.getHeight(); y += this.tileHeight) {
-            for (int x = 0; x < image.getWidth(); x += this.tileWidth) {
-                t = new Tiles(image.getSubimage(x, y, this.tileWidth, this.tileHeight), count);
-                tiles.add(t);
-                count++;
-            }
-        }
-        return tiles;
-    }
+
 
 
 }

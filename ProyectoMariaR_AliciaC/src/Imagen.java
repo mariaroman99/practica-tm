@@ -3,17 +3,17 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 
-public class Marco{
+public class Imagen {
     private BufferedImage image;
     private int id;
     private ArrayList<Tiles> tiles;
-    private ArrayList<BufferedImage> pFrames;
+    private ArrayList<BufferedImage> frames;
 
-    public Marco(BufferedImage image, int id) {
+    public Imagen(BufferedImage image, int id) {
         this.image = image;
         this.id = id;
         this.tiles = new ArrayList<>();
-        this.pFrames = new ArrayList<>();
+        this.frames = new ArrayList<>();
     }
 
     public BufferedImage getImage() {
@@ -36,19 +36,19 @@ public class Marco{
         return tiles;
     }
 
-    public void setTiles(ArrayList<Tiles> tesseles) {
-        this.tiles = tesseles;
+    public void setTiles(ArrayList<Tiles> tiles) {
+        this.tiles = tiles;
     }
 
     public ArrayList<BufferedImage> getpFrames() {
-        return pFrames;
+        return frames;
     }
 
     public void setpFrames(ArrayList<BufferedImage> pFrames) {
-        this.pFrames = pFrames;
+        this.frames = pFrames;
     }
 
     public void addpFrame(BufferedImage image){
-        this.pFrames.add(image);
+        this.frames.add(image);
     }
 }
