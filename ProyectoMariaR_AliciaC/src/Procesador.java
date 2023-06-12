@@ -5,8 +5,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class Procesador {
 
@@ -37,7 +40,25 @@ public class Procesador {
 
     public HashMap<Integer, Image> imagenesFiltradas = new HashMap<Integer, Image>();
 
+    public  long calcularTamañoCarpeta(String ruta){
+        File zipFile = new File(ruta);
+        long totalSize = 0;
+        try (ZipFile zip = new ZipFile(zipFile)) {
 
+
+            Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (!entry.isDirectory()) {
+                    totalSize += entry.getSize();
+                }
+            }
+
+            return totalSize;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }return totalSize;
+    }
     public Procesador(String[] args) throws IOException, InterruptedException {
         procesarArgumentos(args);
     };
@@ -109,7 +130,7 @@ public class Procesador {
 
         if (encode) {
             // Código para la codificación
-
+            long startTime = System.currentTimeMillis();
             System.out.println("Empieza la codificación");
             System.out.println(filter);
             lector = new LectorImagenes(rutaArchivoEntrada, rutaArchivoSalida,  filter, filterValue, imagenesFiltradas);
@@ -122,6 +143,24 @@ public class Procesador {
 
 
             System.out.println("\nHa finalizado la compresión");
+            // Obtener el tiempo actual después de ejecutar el código
+            long endTime = System.currentTimeMillis();
+
+            // Calcular la diferencia para obtener el tiempo de ejecución en milisegundos
+            long executionTime = endTime - startTime;
+
+            long tamañoComprimido = calcularTamañoCarpeta("ImagenesComprimidas.zip");
+            long tamañoSinComprimido = calcularTamañoCarpeta(rutaArchivoSalida);
+
+            // Calcular el porcentaje de factor de compresión
+            double porcentajeFactorCompresion = ((tamañoSinComprimido - tamañoComprimido) / (double) tamañoSinComprimido) * 100;
+
+
+            // Imprimir el tiempo de ejecución
+            System.out.println("Tiempo de ejecución: " + executionTime + " milisegundos");
+            // Imprimir el porcentaje de factor de compresión
+            System.out.println("Porcentaje de factor de compresión: " + porcentajeFactorCompresion + "%");
+
         } else if (decode) {
             // Código para la decodificación
             System.out.println("Empieza la decodificación");
@@ -130,7 +169,7 @@ public class Procesador {
             decodificadorVideo.decode();
 
             System.out.println("\nHa finalizado la descompresión");
-            reproductor = new ReproductorImagenes("output/ImagenesDescomprimidas.zip", fps);
+            reproductor = new ReproductorImagenes("ImagenesDescomprimidas.zip", fps);
             reproductor.reproducir();
         }
 

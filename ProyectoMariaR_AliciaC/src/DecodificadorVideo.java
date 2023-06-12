@@ -61,78 +61,36 @@ public class DecodificadorVideo {
     public ArrayList<BufferedImage> decode() throws IOException {
         this.readZip();
         this.iterateImages();
-        new File("output/ImagenesDescomprimidas/").mkdirs();
+        new File("ImagenesDescomprimidas").mkdirs();
         int totalImages = this.imagenes.size();
         int completedImages = 0;
         int comptador = 0;
-        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream("output/ImagenesDescomprimidass/"));
+        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream("ImagenesDescomprimidas.zip"));
         for (BufferedImage i : this.imagenes) {
-            comprimirJPEG(i, "output/ImagenesDescomprimidas/", String.valueOf(comptador) + ".jpeg");
+            // Crear una entrada ZIP para el archivo de imagen JPG de salida
+            ZipEntry jpgEntry = new ZipEntry("imagenDescomprimida" + String.format(String.valueOf(comptador) + ".jpeg"));
+            zipOut.putNextEntry(jpgEntry);
+
+            // Escribir la imagen en el archivo de salida como JPG
+            ImageIO.write(i, "jpg", zipOut);
+
+
+            // Cerrar la entrada ZIP y pasar a la siguiente imagen
+            zipOut.closeEntry();
             comptador++;
             completedImages++;
             double progressPercentage = (double) completedImages / totalImages;
             ProgressDemo.updateProgress(progressPercentage);
 
         }
-        convertToZip("output/ImagenesDescomprimidas");
         zipOut.close();
+
+
         return this.imagenes;
     }
 
-    public static void convertToZip(String path) throws IOException {
-        Path sourcePath = Paths.get(path);
-
-        // Create a ZIP file
-        ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream("output/ImagenesDescomprimidas.zip"));
-
-        Files.walk(sourcePath)
-                .filter(filePath -> !Files.isDirectory(filePath))
-                .forEach(filePath -> {
-                    try {
-                        // Create a new ZIP entry
-                        String relativePath = sourcePath.relativize(filePath).toString();
-                        ZipEntry zipEntry = new ZipEntry(relativePath);
-                        zipOutputStream.putNextEntry(zipEntry);
-
-                        // Read the file and write its contents to the ZIP output stream
-                        byte[] fileBytes = Files.readAllBytes(filePath);
-                        zipOutputStream.write(fileBytes);
-
-                        zipOutputStream.closeEntry();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-        zipOutputStream.close();
-    }
 
 
-
-    public static void comprimirJPEG(BufferedImage image, String name, String outputIName) throws FileNotFoundException, IOException {
-         //File imageFile = new File("Desert.jpg");
-        File compressedImageFile = new File(name + "/" + outputIName);
-        OutputStream outputStream = new FileOutputStream(compressedImageFile);
-        float imageQuality = 1.0f;
-        //Get image writers
-        Iterator<ImageWriter> imageWriters = ImageIO.getImageWritersByFormatName("jpg");
-        if (!imageWriters.hasNext()) {
-            throw new IllegalStateException("Writers Not Found!!");
-        }
-        ImageWriter imageWriter = (ImageWriter) imageWriters.next();
-        ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream);
-        imageWriter.setOutput(imageOutputStream);
-        ImageWriteParam imageWriteParam = imageWriter.getDefaultWriteParam();
-        //Set the compress quality metrics
-        imageWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-        imageWriteParam.setCompressionQuality(imageQuality);
-
-        imageWriter.write(null, new IIOImage(image, null, null), imageWriteParam);
-        //inputStream.close();
-        outputStream.close();
-        imageOutputStream.close();
-        imageWriter.dispose();
-    }
 
     /**
      * El metodo readZip permite leer un archivo zip codificado y descodificarlo
@@ -142,14 +100,14 @@ public class DecodificadorVideo {
      */
     public void readZip() {
         try {
-            File zipFile = new File("output/" + output);
+            File zipFile = new File("ImagenesComprimidas.zip");
             ZipFile zip = new ZipFile(zipFile);
             Enumeration<? extends ZipEntry> entries = zip.entries();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 String name = entry.getName();
-                if (name.equalsIgnoreCase("ImagenesComprimidas/coords.txt")) {
+                if (name.equalsIgnoreCase("coords.txt")) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
                     String line;
 
@@ -158,7 +116,6 @@ public class DecodificadorVideo {
                         ids.add(Integer.parseInt(parts[0]));
                         xCoords.add(Integer.parseInt(parts[1]));
                         yCoords.add(Integer.parseInt(parts[2]));
-
 
                     }
                     reader.close();
@@ -222,7 +179,6 @@ public class DecodificadorVideo {
             Tiles t = tiles.get(ids.get(k + nTiles));
             Integer x = xCoords.get(k);
             Integer y = yCoords.get(k);
-            //System.out.println(ids.get(k) + "," + x + "," + y);
             BufferedImage tes = t.getTiles();
             if (x != -1 && y != -1) {
                 for (int i = 0; i < this.tileHeight; i++) {
@@ -235,11 +191,6 @@ public class DecodificadorVideo {
         }
     }
 
-    /**
-     * Metodo auxiliar del metodo reconstruirImagen, que a partir de una imagen pasada por parametro
-     * permite subdividir dicha imagen en una array de teselas, que devuelve como retorno.
-
-     */
 
 
 

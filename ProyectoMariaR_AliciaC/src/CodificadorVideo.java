@@ -92,6 +92,7 @@ public class CodificadorVideo {
 
         Imagen imagen, imagen_siguiente;
 
+
         double totalIterations = listaListasGOP.size() * (listaListasGOP.get(0).size() - 1);
         double currentIteration = 0;
         Imagen im = (Imagen) listaListasGOP.get(0).get(0);
@@ -348,44 +349,18 @@ private Color calcularColorMedio(BufferedImage im) {
 
 
 
-    public static void comprimirJPEG(BufferedImage image, String name, String outputIName) throws FileNotFoundException, IOException {
-        File comprimidoImageFile = new File(name + "/" + outputIName);
-        OutputStream outputStream = new FileOutputStream(comprimidoImageFile);
-        float imageQuality = 1.0f;
-        BufferedImage bufferedImage = image;
-
-        // Obtener los escritores de imagen para el formato "jpg"
-        Iterator<ImageWriter> imageWriters = ImageIO.getImageWritersByFormatName("jpg");
-
-        ImageWriter imageWriter = (ImageWriter) imageWriters.next();
-
-        ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream);
-        imageWriter.setOutput(imageOutputStream);
-        ImageWriteParam imageWriteParam = imageWriter.getDefaultWriteParam();
-
-        // Establecer la calidad de compresión
-        imageWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-        imageWriteParam.setCompressionQuality(imageQuality);
-
-        // Escribir la imagen comprimida en el flujo de salida
-        imageWriter.write(null, new IIOImage(bufferedImage, null, null), imageWriteParam);
-
-        outputStream.close();
-        imageOutputStream.close();
-        imageWriter.dispose();
-    }
-
-
-
     /**
      * la función guardarZIP se encarga de crear un zip con las imagenes y las coordenadas para
      * poder realizar la decodificacion.
      */
     private void guardarZIP() throws IOException {
         BufferedWriter bw = null;
-        new File("output//ImagenesComprimidas").mkdirs();
+        new File("ImagenesComprimidas").mkdirs();
+        ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream("ImagenesComprimidas.zip"));
         try {
-            String name = "output/ImagenesComprimidas/coords.txt";
+
+            // Write the content of the coords.txt file
+            String name = "ImagenesComprimidas/coords.txt";
             bw = new BufferedWriter(new FileWriter(name));
 
             // Iterar sobre las teselas acumuladas y escribir las coordenadas en el archivo de texto
@@ -395,56 +370,51 @@ private Color calcularColorMedio(BufferedImage im) {
 
             bw.flush();
             bw.close();
+
+            zipOut.putNextEntry(new ZipEntry("coords.txt"));
+
+            FileInputStream fis = new FileInputStream(name);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = fis.read(buffer)) > 0) {
+                zipOut.write(buffer, 0, length);
+            }
+
+
+
+            // Complete the entry in the zip file
+            zipOut.closeEntry();
         } catch (IOException ex) {
             System.err.println("Excepción IO: " + ex);
         }
 
-
         for (ArrayList<Imagen> p : listaListasGOP) {
             p.forEach((f) -> {
                 try {
-                    comprimirJPEG(f.getImage(), "output/ImagenesComprimidas/",  "imagen" +String.format("%02d", f.getId()) + ".jpeg");
+                    // Crear una entrada ZIP para el archivo de imagen JPG de salida
+                    ZipEntry jpgEntry = new ZipEntry("imagen" +String.format("%02d", f.getId()) + ".jpeg");
+                    zipOut.putNextEntry(jpgEntry);
+
+                    // Escribir la imagen en el archivo de salida como JPG
+                    ImageIO.write(f.getImage(), "jpg", zipOut);
+
+
+                    // Cerrar la entrada ZIP y pasar a la siguiente imagen
+                    zipOut.closeEntry();
+                    //comprimirJPEG(f.getImage(), "output/ImagenesComprimidas/",  "imagen" +String.format("%02d", f.getId()) + ".jpeg");
                 } catch (IOException ex) {
                     System.err.println("Excepcion IO detectada" + ex);
                 }
             });
+
         }
 
 
-        generateZip("output/ImagenesComprimidas", "output/"+ this.output);
-        deleteDirectory(new File("output/ImagenesComprimidas"));
+        zipOut.close();
+        deleteDirectory(new File("ImagenesComprimidas"));
     }
 
 
-
-    public void generateZip(String outputFolder, String destZipFile) {
-        try {
-            ZipOutputStream zipOut = null;
-            FileOutputStream fileWriter = null;
-
-            // Crear el flujo de salida para el archivo ZIP
-            // Crear el objeto ZipOutputStream utilizando el flujo de salida
-            zipOut = new ZipOutputStream(new FileOutputStream(destZipFile));
-
-            // Llamar al método auxiliar para añadir el contenido del directorio a comprimir
-            File folder = new File(outputFolder);
-
-            for (String fileName : folder.list()) {
-                if ("".equals("")) {
-                    addFile(folder.getName(), outputFolder + "/" + fileName, zipOut);
-                } else {
-                    addFile("" + "/" + folder.getName(), outputFolder + "/" + fileName, zipOut);
-                }
-            }
-
-            zipOut.flush();
-            zipOut.close();
-        } catch (FileNotFoundException ex) {
-            // Manejar la excepción en caso de que no se encuentre el archivo
-        } catch (IOException ex) {
-            // Manejar la excepción de entrada/salida
-        }
-    }
 
 
     public boolean deleteDirectory(File dir) {
